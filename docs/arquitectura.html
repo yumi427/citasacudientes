@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arquitectura AWS 100% Serverless - CitasAcudientes</title>
+  <style>
+    :root {
+      --aws-navy: #0f172a;
+      --aws-card: #1e293b;
+      --aws-border: #334155;
+      --aws-orange: #ff9900;
+      --aws-blue: #38bdf8;
+      --aws-purple: #a855f7;
+      --aws-green: #22c55e;
+      --aws-red: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 0%, #1e293b 0%, #0a0f1d 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: rgba(255, 153, 0, 0.15);
+      color: var(--aws-orange);
+      border: 1px solid rgba(255, 153, 0, 0.4);
+      padding: 4px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      background: linear-gradient(90deg, #ffffff, #94a3b8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 15px;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    /* Controles de filtro */
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 20px 0 28px 0;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      background: #1e293b;
+      border: 1px solid var(--aws-border);
+      color: var(--text-muted);
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .filter-btn:hover {
+      border-color: var(--aws-orange);
+      color: var(--text-main);
+    }
+
+    .filter-btn.active {
+      background: var(--aws-orange);
+      color: #000;
+      border-color: var(--aws-orange);
+      box-shadow: 0 0 16px rgba(255, 153, 0, 0.4);
+    }
+
+    /* Diagrama principal */
+    .architecture-board {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(220px, 1fr));
+      gap: 20px;
+      max-width: 1380px;
+      margin: 0 auto 30px auto;
+      position: relative;
+    }
+
+    @media (max-width: 1200px) {
+      .architecture-board {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .stage-col {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid var(--aws-border);
+      border-radius: 14px;
+      padding: 16px;
+      backdrop-filter: blur(8px);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .stage-header {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--aws-border);
+      padding-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .node-card {
+      background: #1e293b;
+      border: 1px solid var(--aws-border);
+      border-radius: 10px;
+      padding: 14px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+
+    .node-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--card-accent, var(--aws-orange));
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .node-card.selected {
+      border-color: var(--card-accent, var(--aws-orange));
+      background: #253349;
+    }
+
+    .node-card.dimmed {
+      opacity: 0.25;
+      filter: grayscale(80%);
+    }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .service-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .icon-user { background: #3b82f6; color: white; }
+    .icon-s3 { background: #16a34a; color: white; }
+    .icon-cf { background: #9333ea; color: white; }
+    .icon-apigw { background: #e11d48; color: white; }
+    .icon-lambda { background: #ea580c; color: white; }
+    .icon-dynamo { background: #2563eb; color: white; }
+    .icon-iam { background: #ca8a04; color: white; }
+
+    .node-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .node-service {
+      font-size: 11px;
+      color: var(--card-accent, var(--text-muted));
+      font-weight: 600;
+    }
+
+    .node-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .flow-tag {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
+    }
+
+    /* Barra transversal de Seguridad e IAM */
+    .iam-banner {
+      max-width: 1380px;
+      margin: 0 auto 30px auto;
+      background: linear-gradient(90deg, rgba(202, 138, 4, 0.15), rgba(30, 41, 59, 0.8));
+      border: 1px solid rgba(202, 138, 4, 0.4);
+      border-radius: 12px;
+      padding: 16px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .iam-info {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    /* Panel de detalles interactivo */
+    .details-panel {
+      max-width: 1380px;
+      margin: 0 auto;
+      background: #1e293b;
+      border: 1px solid var(--aws-border);
+      border-radius: 14px;
+      padding: 22px;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .details-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--aws-orange);
+      margin-bottom: 6px;
+    }
+
+    .details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 14px;
+    }
+
+    @media (max-width: 768px) {
+      .details-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .details-box {
+      background: #0f172a;
+      border: 1px solid var(--aws-border);
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    .details-box h4 {
+      font-size: 13px;
+      color: var(--aws-blue);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .details-box pre {
+      background: #070b14;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      color: #38bdf8;
+      overflow-x: auto;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    /* Matriz de endpoints */
+    .endpoints-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .endpoints-table th, .endpoints-table td {
+      border: 1px solid var(--aws-border);
+      padding: 6px 10px;
+      text-align: left;
+    }
+
+    .endpoints-table th {
+      background: #1e293b;
+      color: var(--text-muted);
+    }
+
+    .method {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 10px;
+    }
+    .method-get { background: #0284c7; color: white; }
+    .method-post { background: #16a34a; color: white; }
+    .method-patch { background: #ea580c; color: white; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="badge">AWS 100% SERVERLESS ARCHITECTURE</div>
+    <h1>Plataforma Móvil CitasAcudientes</h1>
+    <p class="subtitle">
+      Sistema institucional de agendamiento móvil para acudientes y docentes. Arquitectura orientada a eventos con alta disponibilidad, costo cero en reposo y escalabilidad automática.
+    </p>
+
+    <!-- Controles para filtrar por flujo -->
+    <div class="controls">
+      <button class="filter-btn active" onclick="setFlow('all')">🌐 Arquitectura Completa</button>
+      <button class="filter-btn" onclick="setFlow('acudiente')">📱 Flujo Acudiente (Reserva Móvil)</button>
+      <button class="filter-btn" onclick="setFlow('profesor')">👨‍🏫 Flujo Docente (Disponibilidad y Atención)</button>
+    </div>
+  </header>
+
+  <!-- Canvas de arquitectura por etapas -->
+  <main class="architecture-board">
+
+    <!-- COLUMNA 1: CLIENTES MÓVILES -->
+    <div class="stage-col">
+      <div class="stage-header">📱 1. Clientes Móviles</div>
+
+      <div class="node-card flow-acudiente" style="--card-accent: #38bdf8;" onclick="showDetails('acudiente')">
+        <div class="card-top">
+          <div class="service-icon icon-user">👨‍👩‍👦</div>
+          <div>
+            <div class="node-title">Celular Acudiente</div>
+            <div class="node-service">PWA Mobile Web</div>
+          </div>
+        </div>
+        <div class="node-desc">Consulta disponibilidad docente, solicita citas, recibe confirmaciones y cancela citas.</div>
+        <span class="flow-tag">HTTPS / JSON</span>
+      </div>
+
+      <div class="node-card flow-profesor" style="--card-accent: #38bdf8;" onclick="showDetails('profesor')">
+        <div class="card-top">
+          <div class="service-icon icon-user">👨‍🏫</div>
+          <div>
+            <div class="node-title">Celular Docente</div>
+            <div class="node-service">PWA Mobile Web</div>
+          </div>
+        </div>
+        <div class="node-desc">Configura franjas de atención, acepta/rechaza solicitudes y registra compromisos escolares.</div>
+        <span class="flow-tag">HTTPS / JSON</span>
+      </div>
+    </div>
+
+    <!-- COLUMNA 2: HOSTING Y EDGE -->
+    <div class="stage-col">
+      <div class="stage-header">⚡ 2. Frontend & Edge</div>
+
+      <div class="node-card flow-acudiente flow-profesor" style="--card-accent: var(--aws-purple);" onclick="showDetails('cloudfront')">
+        <div class="card-top">
+          <div class="service-icon icon-cf">CF</div>
+          <div>
+            <div class="node-title">Amazon CloudFront</div>
+            <div class="node-service">CDN Global & SSL</div>
+          </div>
+        </div>
+        <div class="node-desc">Distribución con baja latencia para celulares, compresión gzip/brotli y protección DDoS con AWS Shield.</div>
+        <span class="flow-tag">Edge Caching / OAC</span>
+      </div>
+
+      <div class="node-card flow-acudiente flow-profesor" style="--card-accent: var(--aws-green);" onclick="showDetails('s3')">
+        <div class="card-top">
+          <div class="service-icon icon-s3">S3</div>
+          <div>
+            <div class="node-title">Amazon S3 Bucket</div>
+            <div class="node-service">Static Web Hosting</div>
+          </div>
+        </div>
+        <div class="node-desc">Aloja los artefactos compilados del cliente móvil (SPA/PWA: index.html, JS, CSS, assets). Sin acceso público directo.</div>
+        <span class="flow-tag">Origin Access Control</span>
+      </div>
+    </div>
+
+    <!-- COLUMNA 3: GATEWAY & INGRESS -->
+    <div class="stage-col">
+      <div class="stage-header">🚪 3. API & Enrutamiento</div>
+
+      <div class="node-card flow-acudiente flow-profesor" style="--card-accent: var(--aws-red);" onclick="showDetails('apigw')">
+        <div class="card-top">
+          <div class="service-icon icon-apigw">API</div>
+          <div>
+            <div class="node-title">Amazon API Gateway</div>
+            <div class="node-service">HTTP / REST API</div>
+          </div>
+        </div>
+        <div class="node-desc">Punto de entrada único. Maneja validación de esquemas JSON, CORS para móviles, rate-limiting y throttling.</div>
+        <span class="flow-tag">JWT Authorizer / Lambda Proxy</span>
+      </div>
+    </div>
+
+    <!-- COLUMNA 4: CÓMPUTO SERVERLESS -->
+    <div class="stage-col">
+      <div class="stage-header">⚙️ 4. Lógica (AWS Lambda)</div>
+
+      <div class="node-card flow-profesor" style="--card-accent: var(--aws-orange);" onclick="showDetails('lambda-disp')">
+        <div class="card-top">
+          <div class="service-icon icon-lambda">λ</div>
+          <div>
+            <div class="node-title">Disponibilidad Fn</div>
+            <div class="node-service">AWS Lambda</div>
+          </div>
+        </div>
+        <div class="node-desc">Gestión de horarios de atención del docente por materia y jornada.</div>
+        <span class="flow-tag">GET, POST /disponibilidad</span>
+      </div>
+
+      <div class="node-card flow-acudiente" style="--card-accent: var(--aws-orange);" onclick="showDetails('lambda-booking')">
+        <div class="card-top">
+          <div class="service-icon icon-lambda">λ</div>
+          <div>
+            <div class="node-title">Agendar Cita Fn</div>
+            <div class="node-service">AWS Lambda</div>
+          </div>
+        </div>
+        <div class="node-desc">Reserva transaccional con bloqueo atómico para evitar solapamiento de citas.</div>
+        <span class="flow-tag">POST /citas (TransactWrite)</span>
+      </div>
+
+      <div class="node-card flow-profesor flow-acudiente" style="--card-accent: var(--aws-orange);" onclick="showDetails('lambda-citas')">
+        <div class="card-top">
+          <div class="service-icon icon-lambda">λ</div>
+          <div>
+            <div class="node-title">Gestión Citas Fn</div>
+            <div class="node-service">AWS Lambda</div>
+          </div>
+        </div>
+        <div class="node-desc">Listado por usuario, cancelación, confirmación y registro de compromisos.</div>
+        <span class="flow-tag">GET, PATCH /citas/{id}</span>
+      </div>
+    </div>
+
+    <!-- COLUMNA 5: PERSISTENCIA -->
+    <div class="stage-col">
+      <div class="stage-header">🗄️ 5. Base de Datos</div>
+
+      <div class="node-card flow-acudiente flow-profesor" style="--card-accent: var(--aws-blue);" onclick="showDetails('dynamodb')">
+        <div class="card-top">
+          <div class="service-icon icon-dynamo">DB</div>
+          <div>
+            <div class="node-title">Amazon DynamoDB</div>
+            <div class="node-service">NoSQL Single-Table</div>
+          </div>
+        </div>
+        <div class="node-desc">Almacenamiento clave-valor de latencia menor a 10ms. Bloqueo transaccional ACID contra doble reserva.</div>
+        <span class="flow-tag">TransactWriteItems / GSI</span>
+      </div>
+
+      <div class="node-card flow-acudiente flow-profesor" style="--card-accent: var(--aws-blue);" onclick="showDetails('dynamo-streams')">
+        <div class="card-top">
+          <div class="service-icon icon-dynamo">⚡</div>
+          <div>
+            <div class="node-title">DynamoDB Streams</div>
+            <div class="node-service">Event-Driven Stream</div>
+          </div>
+        </div>
+        <div class="node-desc">Captura cambios de estado (cita solicitada, cancelada) para disparar notificaciones en tiempo real.</div>
+        <span class="flow-tag">Streams → Notificaciones</span>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- BANNER DE SEGURIDAD AWS IAM -->
+  <section class="iam-banner" onclick="showDetails('iam')" style="cursor: pointer;">
+    <div class="iam-info">
+      <div class="service-icon icon-iam">🔐</div>
+      <div>
+        <h3 style="font-size: 15px; color: #fde047;">Seguridad Transversal con AWS IAM</h3>
+        <p style="font-size: 13px; color: #cbd5e1;">
+          Principio de menor privilegio: Roles de ejecución dedicados por función Lambda. Acceso a DynamoDB restringido por clave y políticas OAC estrictas para S3.
+        </p>
+      </div>
+    </div>
+    <div class="badge" style="background: rgba(253, 224, 71, 0.15); color: #fde047; border-color: rgba(253, 224, 71, 0.4);">
+      Click para ver Políticas IAM
+    </div>
+  </section>
+
+  <!-- PANEL DE DETALLES TÉCNICOS INTERACTIVO -->
+  <section id="detailsPanel" class="details-panel">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div id="detailsTitle" class="details-title">Detalles del Componente</div>
+      <button onclick="closeDetails()" style="background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;">✕</button>
+    </div>
+    <p id="detailsDesc" style="color: var(--text-muted); font-size: 13px; margin-top: 4px;"></p>
+
+    <div class="details-grid">
+      <div class="details-box">
+        <h4 id="box1Title">Especificación Técnica</h4>
+        <div id="box1Content"></div>
+      </div>
+      <div class="details-box">
+        <h4 id="box2Title">Configuración / Política IAM</h4>
+        <div id="box2Content"></div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const dataStore = {
+      'acudiente': {
+        title: "Celular Acudiente (Móvil Web / PWA)",
+        desc: "Aplicación web progresiva optimizada para teléfonos inteligentes Android y iOS.",
+        box1Title: "Capacidades del Acudiente",
+        box1Content: `
+          <ul style="font-size: 12px; line-height: 1.6; color: #cbd5e1; padding-left: 18px;">
+            <li>Filtrar docentes por grado, grupo o asignatura del estudiante.</li>
+            <li>Consultar calendario con cupos libres en tiempo real.</li>
+            <li>Solicitar cita especificando el motivo pedagógico o conductual.</li>
+            <li>Recibir confirmación instantánea o cancelación con motivo.</li>
+          </ul>
+        `,
+        box2Title: "Experiencia de Usuario Móvil",
+        box2Content: `
+          <pre>Tecnología: React / Vue / HTML5 Responsive PWA
+Almacenamiento local: Token JWT en LocalStorage / IndexedDB
+Comunicaciones: HTTPS REST API mediante Fetch/Axios</pre>
+        `
+      },
+      'profesor': {
+        title: "Celular Docente (Móvil Web / PWA)",
+        desc: "Panel docente adaptado a pantallas táctiles para gestionar la atención a padres de familia.",
+        box1Title: "Capacidades del Docente",
+        box1Content: `
+          <ul style="font-size: 12px; line-height: 1.6; color: #cbd5e1; padding-left: 18px;">
+            <li>Publicar horarios libres de atención semanal (ej. Martes 2:00 PM - 4:00 PM).</li>
+            <li>Aceptar, reprogramar o rechazar solicitudes de cita con justificación.</li>
+            <li>Visualizar historial de citas previas con el acudiente y el estudiante.</li>
+            <li>Registrar compromisos y observaciones al finalizar la reunión.</li>
+          </ul>
+        `,
+        box2Title: "Flujo de Trabajo",
+        box2Content: `
+          <pre>Estado Cita: SOLICITADA → CONFIRMADA → ATENDIDA
+Registro de acta: Texto de acuerdos guardado en DynamoDB</pre>
+        `
+      },
+      'cloudfront': {
+        title: "Amazon CloudFront (CDN y Distribución Segura)",
+        desc: "Punto de presencia perimetral para acelerar la entrega de la aplicación móvil en cualquier operador celular.",
+        box1Title: "Beneficios de Rendimiento",
+        box1Content: `
+          <ul style="font-size: 12px; line-height: 1.6; color: #cbd5e1; padding-left: 18px;">
+            <li>Caché perimetral de archivos estáticos (JS, CSS, imágenes).</li>
+            <li>Certificado SSL/TLS gestionado con AWS Certificate Manager (HTTPS).</li>
+            <li>Compresión Brotli/Gzip para carga ultra-rápida en redes móviles 3G/4G/5G.</li>
+            <li>Protección contra ataques volumétricos con AWS Shield Standard.</li>
+          </ul>
+        `,
+        box2Title: "Configuración de Origen (OAC)",
+        box2Content: `
+          <pre>Origin: S3-citasacudientes-bucket
+Origin Access Control (OAC): Activado
+Viewer Protocol Policy: Redirect HTTP to HTTPS
+Allowed HTTP Methods: GET, HEAD, OPTIONS</pre>
+        `
+      },
+      's3': {
+        title: "Amazon S3 (Bucket de Almacenamiento Estático)",
+        desc: "Repositorio privado de alta durabilidad (99.999999999%) para los archivos compilados del frontend.",
+        box1Title: "Seguridad y Acceso",
+        box1Content: `
+          <ul style="font-size: 12px; line-height: 1.6; color: #cbd5e1; padding-left: 18px;">
+            <li>Bloqueo total de acceso público (Block Public Access: ON).</li>
+            <li>Acceso restringido única y exclusivamente a CloudFront mediante OAC.</li>
+            <li>Versionado habilitado para despliegues continuos y rollback instantáneo.</li>
+          </ul>
+        `,
+        box2Title: "S3 Bucket Policy (OAC)",
+        box2Content: `
+          <pre>{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {"Service": "cloudfront.amazonaws.com"},
+    "Action": "s3:GetObject",
+    "Resource": "arn:aws:s3:::citasacudientes-frontend/*",
+    "Condition": {
+      "StringEquals": {"AWS:SourceArn": "arn:aws:cloudfront::123:distribution/E123"}
+    }
+  }]
+}</pre>
+        `
+      },
+      'apigw': {
+        title: "Amazon API Gateway (Enrutamiento y Control de API)",
+        desc: "Servicio administrado que expone las rutas REST protegidas hacia las funciones Lambda.",
+        box1Title: "Rutas y Recursos Expuestos",
+        box1Content: `
+          <table class="endpoints-table">
+            <tr><th>Método</th><th>Ruta</th><th>Acción</th></tr>
+            <tr><td><span class="method method-get">GET</span></td><td>/disponibilidad</td><td>Lista cupos de profesores</td></tr>
+            <tr><td><span class="method method-post">POST</span></td><td>/disponibilidad</td><td>Docente publica horarios</td></tr>
+            <tr><td><span class="method method-post">POST</span></td><td>/citas</td><td>Acudiente reserva cupo</td></tr>
+            <tr><td><span class="method method-get">GET</span></td><td>/citas</td><td>Lista citas del usuario</td></tr>
+            <tr><td><span class="method method-patch">PATCH</span></td><td>/citas/{id}</td><td>Actualiza estado/compromisos</td></tr>
+          </table>
+        `,
+        box2Title: "Funcionalidades Clave",
+        box2Content: `
+          <pre>Autenticación: JWT Authorizer / Cognito
+Validación: Modelos Request Validation JSON Schema
+Throttling: 100 req/sec por cliente
+CORS: Habilitado para dominio CloudFront</pre>
+        `
+      },
+      'lambda-booking': {
+        title: "AWS Lambda: Agendar Cita (Transaccional)",
+        desc: "Ejecuta la validación de cupo y la reserva en DynamoDB mediante transacciones atómicas.",
+        box1Title: "Lógica Transaccional Anti-Doble Reserva",
+        box1Content: `
+          <p style="font-size: 12px; color: #cbd5e1; line-height: 1.5;">
+            Si dos acudientes pulsan reservar al mismo milisegundo por el mismo horario de un profesor, 
+            DynamoDB <code>TransactWriteItems</code> garantiza que solo uno tenga éxito con 
+            <code>attribute_not_exists</code>, rechazando el segundo de manera consistente.
+          </p>
+        `,
+        box2Title: "Operación DynamoDB",
+        box2Content: `
+          <pre>await dynamo.transactWrite({
+  TransactItems: [
+    {
+      Put: {
+        TableName: "CitasTable",
+        Item: citaPayload,
+        ConditionExpression: "attribute_not_exists(PK)"
+      }
+    },
+    {
+      Update: {
+        TableName: "CitasTable",
+        Key: { PK: "PROF#10", SK: "SLOT#2026-11-20T14:00" },
+        UpdateExpression: "SET estado = :ocupado",
+        ConditionExpression: "estado = :libre"
+      }
+    }
+  ]
+});</pre>
+        `
+      },
+      'lambda-disp': {
+        title: "AWS Lambda: Disponibilidad Docente",
+        desc: "Permite al profesor definir su horario de atención y a los acudientes consultarlo.",
+        box1Title: "Operaciones",
+        box1Content: `
+          <ul style="font-size: 12px; line-height: 1.6; color: #cbd5e1; padding-left: 18px;">
+            <li>Crea franjas recurrentes o de fecha única en minutos.</li>
+            <li>Calcula disponibilidad descontando citas ya asignadas o festivos escolares.</li>
+            <li>Filtrado eficiente mediante consultas Query con Partition Key del docente.</li>
+          </ul>
+        `,
+        box2Title: "Parámetros de Ejecución",
+        box2Content: `
+          <pre>Runtime: Node.js 20.x o Python 3.12
+Memoria: 256 MB (Optimizado para latencia fría < 200ms)
+Timeout: 5 segundos</pre>
+        `
+      },
+      'lambda-citas': {
+        title: "AWS Lambda: Gestión y Seguimiento de Citas",
+        desc: "Controla los cambios de estado de cada cita, cancelaciones y actas de compromisos.",
+        box1Title: "Ciclo de Vida de la Cita",
+        box1Content: `
+          <ul style="font-size: 12px; line-height: 1.6; color: #cbd5e1; padding-left: 18px;">
+            <li><b>PENDIENTE:</b> Solicitada por el acudiente.</li>
+            <li><b>CONFIRMADA:</b> Aprobada por el profesor.</li>
+            <li><b>CANCELADA:</b> Con justificación (libera el cupo en DynamoDB).</li>
+            <li><b>FINALIZADA:</b> Con registro de compromisos académicos.</li>
+          </ul>
+        `,
+        box2Title: "Seguimiento Institucional",
+        box2Content: `
+          <pre>Auditoría: Registro de fecha, usuario y cambio de estado.
+Exportación: Generación de actas firmadas digitalmente.</pre>
+        `
+      },
+      'dynamodb': {
+        title: "Amazon DynamoDB (Single-Table Design)",
+        desc: "Base de datos NoSQL totalmente administrada con capacidad bajo demanda (On-Demand Capacity).",
+        box1Title: "Diseño de Entidades y Claves",
+        box1Content: `
+          <table class="endpoints-table">
+            <tr><th>Entidad</th><th>Partition Key (PK)</th><th>Sort Key (SK)</th></tr>
+            <tr><td>Docente</td><td>PROFESOR#{id}</td><td>METADATA</td></tr>
+            <tr><td>Disponibilidad</td><td>PROFESOR#{id}</td><td>HORARIO#{fecha}#{hora}</td></tr>
+            <tr><td>Cita</td><td>CITA#{id}</td><td>METADATA</td></tr>
+            <tr><td>Acudiente</td><td>ACUDIENTE#{id}</td><td>METADATA</td></tr>
+          </table>
+        `,
+        box2Title: "Índices Secundarios Globales (GSI)",
+        box2Content: `
+          <pre>GSI1_PK: ACUDIENTE#{id} | GSI1_SK: FECHA#{timestamp}
+-> Permite al acudiente ver todas sus citas ordenadas cronológicamente.
+
+GSI2_PK: ESTADO#{estado} | GSI2_SK: FECHA#{timestamp}
+-> Permite a la coordinación monitorear citas pendientes.</pre>
+        `
+      },
+      'dynamo-streams': {
+        title: "DynamoDB Streams (Arquitectura Orientada a Eventos)",
+        desc: "Canaliza eventos de inserción y modificación de citas para ejecutar procesos secundarios asíncronos.",
+        box1Title: "Eventos Automatizados",
+        box1Content: `
+          <ul style="font-size: 12px; line-height: 1.6; color: #cbd5e1; padding-left: 18px;">
+            <li>Nueva cita creada → Dispara notificación por correo/SMS al profesor.</li>
+            <li>Cita confirmada → Dispara recordatorio al celular del acudiente con fecha y aula.</li>
+            <li>Cita cancelada → Dispara alerta a ambas partes y rehabilita el horario.</li>
+          </ul>
+        `,
+        box2Title: "Integración Serverless",
+        box2Content: `
+          <pre>DynamoDB Stream (NEW_AND_OLD_IMAGES)
+   ↓
+Lambda NotificacionesTrigger
+   ↓
+Amazon SNS / Amazon SES (Email y SMS al celular)</pre>
+        `
+      },
+      'iam': {
+        title: "Seguridad y Roles AWS IAM",
+        desc: "Políticas de seguridad basadas en el principio de menor privilegio (Least Privilege Access).",
+        box1Title: "Roles de Ejecución Implementados",
+        box1Content: `
+          <ul style="font-size: 12px; line-height: 1.6; color: #cbd5e1; padding-left: 18px;">
+            <li><b>LambdaBookingRole:</b> Únicamente permisos <code>dynamodb:TransactWriteItems</code> y <code>dynamodb:PutItem</code> sobre la tabla CitasTable.</li>
+            <li><b>LambdaReadRole:</b> Únicamente <code>dynamodb:GetItem</code> y <code>dynamodb:Query</code>.</li>
+            <li><b>CloudWatchLogsRole:</b> Creación de logs para monitoreo y depuración.</li>
+          </ul>
+        `,
+        box2Title: "Ejemplo de Política IAM para Lambda Agendar",
+        box2Content: `
+          <pre>{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:GetItem"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:*:*:table/CitasAcudientesTable",
+        "arn:aws:dynamodb:*:*:table/CitasAcudientesTable/index/*"
+      ]
+    }
+  ]
+}</pre>
+        `
+      }
+    };
+
+    function showDetails(key) {
+      const item = dataStore[key];
+      if (!item) return;
+
+      document.querySelectorAll('.node-card').forEach(c => c.classList.remove('selected'));
+      event.currentTarget.classList.add('selected');
+
+      document.getElementById('detailsTitle').innerText = item.title;
+      document.getElementById('detailsDesc').innerText = item.desc;
+      document.getElementById('box1Title').innerText = item.box1Title;
+      document.getElementById('box1Content').innerHTML = item.box1Content;
+      document.getElementById('box2Title').innerText = item.box2Title;
+      document.getElementById('box2Content').innerHTML = item.box2Content;
+
+      const panel = document.getElementById('detailsPanel');
+      panel.style.display = 'block';
+      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function closeDetails() {
+      document.getElementById('detailsPanel').style.display = 'none';
+      document.querySelectorAll('.node-card').forEach(c => c.classList.remove('selected'));
+    }
+
+    function setFlow(flow) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+
+      const cards = document.querySelectorAll('.node-card');
+      cards.forEach(card => {
+        if (flow === 'all') {
+          card.classList.remove('dimmed');
+        } else if (flow === 'acudiente') {
+          if (card.classList.contains('flow-acudiente')) {
+            card.classList.remove('dimmed');
+          } else {
+            card.classList.add('dimmed');
+          }
+        } else if (flow === 'profesor') {
+          if (card.classList.contains('flow-profesor')) {
+            card.classList.remove('dimmed');
+          } else {
+            card.classList.add('dimmed');
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>

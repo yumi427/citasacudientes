@@ -22,12 +22,28 @@ Sistema de gestión y asignación de citas para acudientes e instituciones educa
 
 ```text
 citasacudientes/
-├── src/               # Código fuente de la aplicación
-├── docs/              # Documentación técnica y de usuario
+├── src/               # Código fuente de la aplicación (Lambdas y Frontend)
+├── docs/              # Documentación técnica y diagramas
+│   ├── arquitectura.html # Diagrama interactivo de arquitectura AWS Serverless
+│   └── ARQUITECTURA.md   # Especificación técnica detallada y modelo DynamoDB
 ├── tests/             # Pruebas unitarias y de integración
 ├── .gitignore         # Archivos y carpetas ignorados por git
 └── README.md          # Documentación general del proyecto
 ```
+
+---
+
+## ☁️ Arquitectura AWS (100% Serverless)
+
+La solución utiliza una arquitectura totalmente Serverless con costo cero en reposo y escalabilidad automática:
+
+- **Frontend Móvil (PWA):** Alojado en **Amazon S3** y distribuido de forma segura y ultra-rápida vía **Amazon CloudFront** con SSL.
+- **API & Enrutamiento:** **Amazon API Gateway** para endpoints REST protegidos con validación JSON y control de tasa.
+- **Lógica de Negocio:** Funciones **AWS Lambda** especializadas (Disponibilidad, Agendamiento Transaccional, Gestión y Seguimiento).
+- **Base de Datos:** **Amazon DynamoDB** (Single-Table Design con transacciones ACID para evitar reservas simultáneas o sobrecupos).
+- **Seguridad:** **AWS IAM** con roles de ejecución dedicados y principio de menor privilegio.
+
+👉 **Explora el [Diagrama Interactivo de Arquitectura (HTML)](file:///C:/Users/Yoimer%20Barrera/ACME/citasacudientes/docs/arquitectura.html)** y la **[Especificación Técnica Completa](file:///C:/Users/Yoimer%20Barrera/ACME/citasacudientes/docs/ARQUITECTURA.md)**.
 
 ---
 
