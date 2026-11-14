@@ -3,19 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Arquitectura AWS 100% Serverless - CitasAcudientes</title>
+  <title>Arquitectura AWS 100% Serverless con Cifrado E2E - CitasAcudientes</title>
   <style>
     :root {
-      --aws-navy: #0f172a;
-      --aws-card: #1e293b;
-      --aws-border: #334155;
+      --bg-dark: #0a0f1d;
+      --card-bg: #1e293b;
+      --card-border: #334155;
       --aws-orange: #ff9900;
       --aws-blue: #38bdf8;
       --aws-purple: #a855f7;
       --aws-green: #22c55e;
       --aws-red: #ef4444;
+      --aws-yellow: #facc15;
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
+      --accent-flow: #3b82f6;
     }
 
     * {
@@ -26,33 +28,55 @@
     }
 
     body {
-      background: radial-gradient(circle at 50% 0%, #1e293b 0%, #0a0f1d 100%);
+      background: radial-gradient(circle at 50% 0%, #1e293b 0%, var(--bg-dark) 100%);
       color: var(--text-main);
       min-height: 100vh;
-      padding: 24px;
+      padding: 24px 16px;
     }
 
     header {
       text-align: center;
-      margin-bottom: 24px;
+      max-width: 900px;
+      margin: 0 auto 20px auto;
+    }
+
+    .badge-bar {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
     }
 
     .badge {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       background: rgba(255, 153, 0, 0.15);
       color: var(--aws-orange);
       border: 1px solid rgba(255, 153, 0, 0.4);
       padding: 4px 14px;
       border-radius: 999px;
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 12px;
+      font-weight: 700;
       letter-spacing: 0.5px;
-      margin-bottom: 10px;
+    }
+
+    .badge-security {
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+      border-color: rgba(34, 197, 94, 0.4);
+    }
+
+    .badge-kms {
+      background: rgba(250, 204, 21, 0.15);
+      color: #fde047;
+      border-color: rgba(250, 204, 21, 0.4);
     }
 
     h1 {
       font-size: 28px;
-      font-weight: 700;
+      font-weight: 800;
       margin-bottom: 8px;
       background: linear-gradient(90deg, #ffffff, #94a3b8);
       -webkit-background-clip: text;
@@ -61,27 +85,165 @@
 
     p.subtitle {
       color: var(--text-muted);
-      font-size: 15px;
-      max-width: 720px;
-      margin: 0 auto;
+      font-size: 14px;
+      line-height: 1.5;
     }
 
-    /* Controles de filtro */
+    /* BARRA DE CIFRADO TRANSVERSAL */
+    .security-ribbon {
+      max-width: 1400px;
+      margin: 0 auto 24px auto;
+      background: linear-gradient(90deg, rgba(34, 197, 94, 0.1) 0%, rgba(250, 204, 21, 0.1) 50%, rgba(56, 189, 248, 0.1) 100%);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      border-radius: 12px;
+      padding: 14px 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .security-ribbon {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .security-box {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .sec-icon {
+      font-size: 22px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 8px;
+      border-radius: 8px;
+      flex-shrink: 0;
+    }
+
+    .sec-content h3 {
+      font-size: 13px;
+      color: #f8fafc;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .sec-content p {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* FLUJO PASO A PASO INTERACTIVO */
+    .stepper-section {
+      max-width: 1400px;
+      margin: 0 auto 24px auto;
+      background: #111827;
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 18px 20px;
+    }
+
+    .stepper-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .stepper-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stepper-steps {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+    }
+
+    @media (max-width: 1024px) {
+      .stepper-steps {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    @media (max-width: 640px) {
+      .stepper-steps {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .step-item {
+      background: #1e293b;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 12px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+
+    .step-item:hover {
+      border-color: var(--aws-orange);
+      transform: translateY(-2px);
+    }
+
+    .step-item.active {
+      border-color: var(--aws-orange);
+      background: #23354e;
+      box-shadow: 0 0 12px rgba(255, 153, 0, 0.3);
+    }
+
+    .step-num {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--aws-orange);
+      color: #000;
+      font-size: 11px;
+      font-weight: 800;
+      text-align: center;
+      line-height: 20px;
+      margin-bottom: 6px;
+    }
+
+    .step-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #f8fafc;
+      margin-bottom: 4px;
+    }
+
+    .step-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.3;
+    }
+
+    /* CONTROLES */
     .controls {
       display: flex;
       justify-content: center;
-      gap: 12px;
-      margin: 20px 0 28px 0;
+      gap: 10px;
+      margin: 16px 0 24px 0;
       flex-wrap: wrap;
     }
 
     .filter-btn {
       background: #1e293b;
-      border: 1px solid var(--aws-border);
+      border: 1px solid var(--card-border);
       color: var(--text-muted);
-      padding: 8px 18px;
+      padding: 8px 16px;
       border-radius: 8px;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s ease;
@@ -96,17 +258,16 @@
       background: var(--aws-orange);
       color: #000;
       border-color: var(--aws-orange);
-      box-shadow: 0 0 16px rgba(255, 153, 0, 0.4);
+      box-shadow: 0 0 14px rgba(255, 153, 0, 0.4);
     }
 
-    /* Diagrama principal */
+    /* TABLERO DE ARQUITECTURA */
     .architecture-board {
       display: grid;
-      grid-template-columns: repeat(5, minmax(220px, 1fr));
-      gap: 20px;
-      max-width: 1380px;
-      margin: 0 auto 30px auto;
-      position: relative;
+      grid-template-columns: repeat(5, minmax(230px, 1fr));
+      gap: 16px;
+      max-width: 1400px;
+      margin: 0 auto 24px auto;
     }
 
     @media (max-width: 1200px) {
@@ -116,23 +277,23 @@
     }
 
     .stage-col {
-      background: rgba(30, 41, 59, 0.6);
-      border: 1px solid var(--aws-border);
+      background: rgba(30, 41, 59, 0.65);
+      border: 1px solid var(--card-border);
       border-radius: 14px;
       padding: 16px;
       backdrop-filter: blur(8px);
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 12px;
     }
 
     .stage-header {
-      font-size: 12px;
-      font-weight: 700;
+      font-size: 11px;
+      font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.8px;
       color: var(--text-muted);
-      border-bottom: 1px solid var(--aws-border);
+      border-bottom: 1px solid var(--card-border);
       padding-bottom: 8px;
       display: flex;
       align-items: center;
@@ -141,7 +302,7 @@
 
     .node-card {
       background: #1e293b;
-      border: 1px solid var(--aws-border);
+      border: 1px solid var(--card-border);
       border-radius: 10px;
       padding: 14px;
       cursor: pointer;
@@ -152,17 +313,25 @@
     .node-card:hover {
       transform: translateY(-3px);
       border-color: var(--card-accent, var(--aws-orange));
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
     }
 
-    .node-card.selected {
-      border-color: var(--card-accent, var(--aws-orange));
-      background: #253349;
+    .node-card.highlight {
+      border-color: var(--aws-orange) !important;
+      background: #25364f !important;
+      box-shadow: 0 0 20px rgba(255, 153, 0, 0.4) !important;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 10px rgba(255, 153, 0, 0.3); }
+      50% { box-shadow: 0 0 22px rgba(255, 153, 0, 0.6); }
+      100% { box-shadow: 0 0 10px rgba(255, 153, 0, 0.3); }
     }
 
     .node-card.dimmed {
       opacity: 0.25;
-      filter: grayscale(80%);
+      filter: grayscale(85%);
     }
 
     .card-top {
@@ -173,27 +342,27 @@
     }
 
     .service-icon {
-      width: 38px;
-      height: 38px;
+      width: 36px;
+      height: 36px;
       border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: bold;
-      font-size: 18px;
+      font-size: 16px;
       flex-shrink: 0;
     }
 
     .icon-user { background: #3b82f6; color: white; }
-    .icon-s3 { background: #16a34a; color: white; }
     .icon-cf { background: #9333ea; color: white; }
+    .icon-s3 { background: #16a34a; color: white; }
     .icon-apigw { background: #e11d48; color: white; }
     .icon-lambda { background: #ea580c; color: white; }
     .icon-dynamo { background: #2563eb; color: white; }
     .icon-iam { background: #ca8a04; color: white; }
 
     .node-title {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
       color: var(--text-main);
     }
@@ -210,43 +379,47 @@
       line-height: 1.4;
     }
 
+    .tag-container {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
     .flow-tag {
-      display: inline-block;
-      margin-top: 8px;
       font-size: 10px;
-      padding: 2px 8px;
+      padding: 2px 7px;
       border-radius: 4px;
       background: rgba(255, 255, 255, 0.08);
       color: #cbd5e1;
     }
 
-    /* Barra transversal de Seguridad e IAM */
-    .iam-banner {
-      max-width: 1380px;
-      margin: 0 auto 30px auto;
-      background: linear-gradient(90deg, rgba(202, 138, 4, 0.15), rgba(30, 41, 59, 0.8));
-      border: 1px solid rgba(202, 138, 4, 0.4);
-      border-radius: 12px;
-      padding: 16px 22px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      flex-wrap: wrap;
+    .enc-tag {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      font-weight: 600;
     }
 
-    .iam-info {
-      display: flex;
-      align-items: center;
-      gap: 14px;
+    .kms-tag {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(250, 204, 21, 0.15);
+      color: #facc15;
+      border: 1px solid rgba(250, 204, 21, 0.3);
+      font-weight: 600;
     }
 
-    /* Panel de detalles interactivo */
+    /* PANEL INFORMATIVO */
     .details-panel {
-      max-width: 1380px;
+      max-width: 1400px;
       margin: 0 auto;
       background: #1e293b;
-      border: 1px solid var(--aws-border);
+      border: 1px solid var(--card-border);
       border-radius: 14px;
       padding: 22px;
       display: none;
@@ -280,7 +453,7 @@
 
     .details-box {
       background: #0f172a;
-      border: 1px solid var(--aws-border);
+      border: 1px solid var(--card-border);
       border-radius: 8px;
       padding: 14px;
     }
@@ -303,17 +476,16 @@
       font-family: 'Courier New', Courier, monospace;
     }
 
-    /* Matriz de endpoints */
     .endpoints-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 12px;
-      margin-top: 10px;
+      font-size: 11px;
+      margin-top: 6px;
     }
 
     .endpoints-table th, .endpoints-table td {
-      border: 1px solid var(--aws-border);
-      padding: 6px 10px;
+      border: 1px solid var(--card-border);
+      padding: 6px 8px;
       text-align: left;
     }
 
@@ -321,44 +493,121 @@
       background: #1e293b;
       color: var(--text-muted);
     }
-
-    .method {
-      display: inline-block;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-weight: 700;
-      font-size: 10px;
-    }
-    .method-get { background: #0284c7; color: white; }
-    .method-post { background: #16a34a; color: white; }
-    .method-patch { background: #ea580c; color: white; }
   </style>
 </head>
 <body>
 
   <header>
-    <div class="badge">AWS 100% SERVERLESS ARCHITECTURE</div>
+    <div class="badge-bar">
+      <div class="badge">AWS 100% SERVERLESS</div>
+      <div class="badge badge-security">🔒 CIFRADO EN TRÁNSITO (TLS 1.3)</div>
+      <div class="badge badge-kms">🛡️ CIFRADO EN REPOSO (AWS KMS)</div>
+    </div>
     <h1>Plataforma Móvil CitasAcudientes</h1>
     <p class="subtitle">
-      Sistema institucional de agendamiento móvil para acudientes y docentes. Arquitectura orientada a eventos con alta disponibilidad, costo cero en reposo y escalabilidad automática.
+      Flujo integral de agendamiento móvil para instituciones educativas. Arquitectura síncrona sin colas ni DynamoDB Streams, con protección de datos de grado bancario en reposo y en tránsito.
     </p>
 
-    <!-- Controles para filtrar por flujo -->
+    <!-- Controles de vista -->
     <div class="controls">
-      <button class="filter-btn active" onclick="setFlow('all')">🌐 Arquitectura Completa</button>
-      <button class="filter-btn" onclick="setFlow('acudiente')">📱 Flujo Acudiente (Reserva Móvil)</button>
-      <button class="filter-btn" onclick="setFlow('profesor')">👨‍🏫 Flujo Docente (Disponibilidad y Atención)</button>
+      <button class="filter-btn active" onclick="setFlow('all', this)">🌐 Arquitectura Completa</button>
+      <button class="filter-btn" onclick="setFlow('acudiente', this)">📱 Flujo Acudiente (Reserva Móvil)</button>
+      <button class="filter-btn" onclick="setFlow('profesor', this)">👨‍🏫 Flujo Docente (Disponibilidad)</button>
     </div>
   </header>
 
-  <!-- Canvas de arquitectura por etapas -->
+  <!-- SECCIÓN VISUAL DEL FLUJO DE ENTRADA PASO A PASO (END-TO-END) -->
+  <section class="stepper-section">
+    <div class="stepper-header">
+      <div class="stepper-title">
+        <span>🚀 Flujo de Entrada: Desde la Carga Web hasta el Guardado en Base de Datos</span>
+      </div>
+      <span style="font-size: 12px; color: var(--text-muted);">Haz clic en un paso para resaltar los componentes en el diagrama</span>
+    </div>
+
+    <div class="stepper-steps">
+      <!-- Paso 1 -->
+      <div class="step-item" id="step1" onclick="highlightStep(1, ['node-acudiente', 'node-cf', 'node-s3'])">
+        <span class="step-num">1</span>
+        <div class="step-title">Descarga PWA</div>
+        <div class="step-sub">Usuario abre el navegador móvil → CloudFront sirve SPA desde S3 mediante OAC cifrado con TLS 1.3 y SSE-KMS.</div>
+      </div>
+
+      <!-- Paso 2 -->
+      <div class="step-item" id="step2" onclick="highlightStep(2, ['node-acudiente', 'node-apigw'])">
+        <span class="step-num">2</span>
+        <div class="step-title">Solicitud HTTPS</div>
+        <div class="step-sub">Acudiente selecciona cita → Envía <code>POST /citas</code> con payload JSON cifrado en tránsito por TLS 1.3.</div>
+      </div>
+
+      <!-- Paso 3 -->
+      <div class="step-item" id="step3" onclick="highlightStep(3, ['node-apigw', 'node-lambda-booking'])">
+        <span class="step-num">3</span>
+        <div class="step-title">Gateway & Enrutado</div>
+        <div class="step-sub">API Gateway valida esquema JSON, verifica CORS/Auth y deriva mediante conexión interna TLS a AWS Lambda.</div>
+      </div>
+
+      <!-- Paso 4 -->
+      <div class="step-item" id="step4" onclick="highlightStep(4, ['node-lambda-booking'])">
+        <span class="step-num">4</span>
+        <div class="step-title">Lógica & Validación</div>
+        <div class="step-sub">Lambda procesa la regla de negocio y prepara la transacción atómica para garantizar cupo único.</div>
+      </div>
+
+      <!-- Paso 5 -->
+      <div class="step-item" id="step5" onclick="highlightStep(5, ['node-lambda-booking', 'node-dynamo'])">
+        <span class="step-num">5</span>
+        <div class="step-title">Escritura Transaccional</div>
+        <div class="step-sub">Lambda invoca <code>TransactWriteItems</code> sobre DynamoDB vía SDK HTTPS TLS 1.3 sin streams intermediarios.</div>
+      </div>
+
+      <!-- Paso 6 -->
+      <div class="step-item" id="step6" onclick="highlightStep(6, ['node-dynamo'])">
+        <span class="step-num">6</span>
+        <div class="step-title">Persistencia KMS</div>
+        <div class="step-sub">DynamoDB cifra en reposo con AWS KMS (256-bit) y retorna 201 Created al celular del acudiente.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BANNER DE CIFRADO EN REPOSO Y EN TRÁNSITO -->
+  <section class="security-ribbon">
+    <div class="security-box">
+      <div class="sec-icon">🔒</div>
+      <div class="sec-content">
+        <h3>Cifrado en Tránsito (End-to-End TLS 1.3)</h3>
+        <p>
+          Todo paquete de datos viaja bajo canales criptográficos seguros:
+          <b>Móvil ↔ CloudFront</b> (HTTPS TLS 1.3 con certificados ACM),
+          <b>CloudFront ↔ S3</b> (HTTPS con OAC estricto),
+          <b>Móvil ↔ API Gateway</b> (HTTPS REST), y
+          <b>Lambda ↔ DynamoDB</b> (Llamadas API al endpoint regional con TLS 1.3).
+        </p>
+      </div>
+    </div>
+
+    <div class="security-box">
+      <div class="sec-icon">🛡️</div>
+      <div class="sec-content">
+        <h3>Cifrado en Reposo (AWS KMS con Claves Administradas)</h3>
+        <p>
+          Cero datos en texto plano:
+          <b>Amazon S3:</b> Cifrado del lado del servidor SSE-KMS en cada objeto estático.
+          <b>Amazon DynamoDB:</b> Cifrado en reposo habilitado con AWS KMS (Customer Managed Key), cifrando tablas, índices (GSI) y copias de seguridad.
+          <b>AWS Lambda:</b> Variables de entorno y artefactos cifrados con KMS.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- DIAGRAMA PRINCIPAL DE COMPONENTES -->
   <main class="architecture-board">
 
     <!-- COLUMNA 1: CLIENTES MÓVILES -->
     <div class="stage-col">
       <div class="stage-header">📱 1. Clientes Móviles</div>
 
-      <div class="node-card flow-acudiente" style="--card-accent: #38bdf8;" onclick="showDetails('acudiente')">
+      <div id="node-acudiente" class="node-card flow-acudiente" style="--card-accent: #38bdf8;" onclick="showDetails('acudiente')">
         <div class="card-top">
           <div class="service-icon icon-user">👨‍👩‍👦</div>
           <div>
@@ -366,11 +615,14 @@
             <div class="node-service">PWA Mobile Web</div>
           </div>
         </div>
-        <div class="node-desc">Consulta disponibilidad docente, solicita citas, recibe confirmaciones y cancela citas.</div>
-        <span class="flow-tag">HTTPS / JSON</span>
+        <div class="node-desc">Consulta disponibilidad y agenda cita con el docente desde su smartphone.</div>
+        <div class="tag-container">
+          <span class="enc-tag">TLS 1.3</span>
+          <span class="flow-tag">HTTPS POST /citas</span>
+        </div>
       </div>
 
-      <div class="node-card flow-profesor" style="--card-accent: #38bdf8;" onclick="showDetails('profesor')">
+      <div id="node-profesor" class="node-card flow-profesor" style="--card-accent: #38bdf8;" onclick="showDetails('profesor')">
         <div class="card-top">
           <div class="service-icon icon-user">👨‍🏫</div>
           <div>
@@ -378,54 +630,66 @@
             <div class="node-service">PWA Mobile Web</div>
           </div>
         </div>
-        <div class="node-desc">Configura franjas de atención, acepta/rechaza solicitudes y registra compromisos escolares.</div>
-        <span class="flow-tag">HTTPS / JSON</span>
+        <div class="node-desc">Define franjas de atención y registra compromisos y actas de reunión.</div>
+        <div class="tag-container">
+          <span class="enc-tag">TLS 1.3</span>
+          <span class="flow-tag">HTTPS POST /disponibilidad</span>
+        </div>
       </div>
     </div>
 
-    <!-- COLUMNA 2: HOSTING Y EDGE -->
+    <!-- COLUMNA 2: FRONTEND & EDGE -->
     <div class="stage-col">
       <div class="stage-header">⚡ 2. Frontend & Edge</div>
 
-      <div class="node-card flow-acudiente flow-profesor" style="--card-accent: var(--aws-purple);" onclick="showDetails('cloudfront')">
+      <div id="node-cf" class="node-card flow-acudiente flow-profesor" style="--card-accent: var(--aws-purple);" onclick="showDetails('cloudfront')">
         <div class="card-top">
           <div class="service-icon icon-cf">CF</div>
           <div>
             <div class="node-title">Amazon CloudFront</div>
-            <div class="node-service">CDN Global & SSL</div>
+            <div class="node-service">CDN Perimetral con SSL</div>
           </div>
         </div>
-        <div class="node-desc">Distribución con baja latencia para celulares, compresión gzip/brotli y protección DDoS con AWS Shield.</div>
-        <span class="flow-tag">Edge Caching / OAC</span>
+        <div class="node-desc">Entrega de assets PWA en milisegundos con compresión Brotli y terminación TLS 1.3.</div>
+        <div class="tag-container">
+          <span class="enc-tag">TLS 1.3 (ACM)</span>
+          <span class="flow-tag">Redirect HTTP → HTTPS</span>
+        </div>
       </div>
 
-      <div class="node-card flow-acudiente flow-profesor" style="--card-accent: var(--aws-green);" onclick="showDetails('s3')">
+      <div id="node-s3" class="node-card flow-acudiente flow-profesor" style="--card-accent: var(--aws-green);" onclick="showDetails('s3')">
         <div class="card-top">
           <div class="service-icon icon-s3">S3</div>
           <div>
             <div class="node-title">Amazon S3 Bucket</div>
-            <div class="node-service">Static Web Hosting</div>
+            <div class="node-service">Static Hosting Seguro</div>
           </div>
         </div>
-        <div class="node-desc">Aloja los artefactos compilados del cliente móvil (SPA/PWA: index.html, JS, CSS, assets). Sin acceso público directo.</div>
-        <span class="flow-tag">Origin Access Control</span>
+        <div class="node-desc">Almacena index.html, JS y CSS. Bloqueo público total; solo accesible por CloudFront vía OAC.</div>
+        <div class="tag-container">
+          <span class="kms-tag">SSE-KMS Reposo</span>
+          <span class="enc-tag">OAC Cifrado</span>
+        </div>
       </div>
     </div>
 
-    <!-- COLUMNA 3: GATEWAY & INGRESS -->
+    <!-- COLUMNA 3: API & ENRUTAMIENTO -->
     <div class="stage-col">
       <div class="stage-header">🚪 3. API & Enrutamiento</div>
 
-      <div class="node-card flow-acudiente flow-profesor" style="--card-accent: var(--aws-red);" onclick="showDetails('apigw')">
+      <div id="node-apigw" class="node-card flow-acudiente flow-profesor" style="--card-accent: var(--aws-red);" onclick="showDetails('apigw')">
         <div class="card-top">
           <div class="service-icon icon-apigw">API</div>
           <div>
             <div class="node-title">Amazon API Gateway</div>
-            <div class="node-service">HTTP / REST API</div>
+            <div class="node-service">REST API Gateway</div>
           </div>
         </div>
-        <div class="node-desc">Punto de entrada único. Maneja validación de esquemas JSON, CORS para móviles, rate-limiting y throttling.</div>
-        <span class="flow-tag">JWT Authorizer / Lambda Proxy</span>
+        <div class="node-desc">Punto único de entrada HTTPS. Valida payloads JSON, gestiona CORS móvil y deriva a Lambdas.</div>
+        <div class="tag-container">
+          <span class="enc-tag">TLS 1.2 / 1.3</span>
+          <span class="flow-tag">Throttling / Auth</span>
+        </div>
       </div>
     </div>
 
@@ -433,7 +697,7 @@
     <div class="stage-col">
       <div class="stage-header">⚙️ 4. Lógica (AWS Lambda)</div>
 
-      <div class="node-card flow-profesor" style="--card-accent: var(--aws-orange);" onclick="showDetails('lambda-disp')">
+      <div id="node-lambda-disp" class="node-card flow-profesor" style="--card-accent: var(--aws-orange);" onclick="showDetails('lambda-disp')">
         <div class="card-top">
           <div class="service-icon icon-lambda">λ</div>
           <div>
@@ -441,11 +705,14 @@
             <div class="node-service">AWS Lambda</div>
           </div>
         </div>
-        <div class="node-desc">Gestión de horarios de atención del docente por materia y jornada.</div>
-        <span class="flow-tag">GET, POST /disponibilidad</span>
+        <div class="node-desc">Consulta y publica franjas horarias habilitadas para atención a padres.</div>
+        <div class="tag-container">
+          <span class="kms-tag">KMS Env Vars</span>
+          <span class="flow-tag">/disponibilidad</span>
+        </div>
       </div>
 
-      <div class="node-card flow-acudiente" style="--card-accent: var(--aws-orange);" onclick="showDetails('lambda-booking')">
+      <div id="node-lambda-booking" class="node-card flow-acudiente" style="--card-accent: var(--aws-orange);" onclick="showDetails('lambda-booking')">
         <div class="card-top">
           <div class="service-icon icon-lambda">λ</div>
           <div>
@@ -453,11 +720,14 @@
             <div class="node-service">AWS Lambda</div>
           </div>
         </div>
-        <div class="node-desc">Reserva transaccional con bloqueo atómico para evitar solapamiento de citas.</div>
-        <span class="flow-tag">POST /citas (TransactWrite)</span>
+        <div class="node-desc">Lógica de agendamiento. Ejecuta transacción ACID directa hacia DynamoDB sin colas ni streams.</div>
+        <div class="tag-container">
+          <span class="kms-tag">KMS Env Vars</span>
+          <span class="flow-tag">TransactWrite</span>
+        </div>
       </div>
 
-      <div class="node-card flow-profesor flow-acudiente" style="--card-accent: var(--aws-orange);" onclick="showDetails('lambda-citas')">
+      <div id="node-lambda-citas" class="node-card flow-profesor flow-acudiente" style="--card-accent: var(--aws-orange);" onclick="showDetails('lambda-citas')">
         <div class="card-top">
           <div class="service-icon icon-lambda">λ</div>
           <div>
@@ -465,8 +735,11 @@
             <div class="node-service">AWS Lambda</div>
           </div>
         </div>
-        <div class="node-desc">Listado por usuario, cancelación, confirmación y registro de compromisos.</div>
-        <span class="flow-tag">GET, PATCH /citas/{id}</span>
+        <div class="node-desc">Control de estados (Confirmada, Atendida, Cancelada) y actas de compromisos.</div>
+        <div class="tag-container">
+          <span class="kms-tag">KMS Env Vars</span>
+          <span class="flow-tag">/citas/{id}</span>
+        </div>
       </div>
     </div>
 
@@ -474,46 +747,39 @@
     <div class="stage-col">
       <div class="stage-header">🗄️ 5. Base de Datos</div>
 
-      <div class="node-card flow-acudiente flow-profesor" style="--card-accent: var(--aws-blue);" onclick="showDetails('dynamodb')">
+      <div id="node-dynamo" class="node-card flow-acudiente flow-profesor" style="--card-accent: var(--aws-blue);" onclick="showDetails('dynamodb')">
         <div class="card-top">
           <div class="service-icon icon-dynamo">DB</div>
           <div>
             <div class="node-title">Amazon DynamoDB</div>
-            <div class="node-service">NoSQL Single-Table</div>
+            <div class="node-service">NoSQL Single-Table (On-Demand)</div>
           </div>
         </div>
-        <div class="node-desc">Almacenamiento clave-valor de latencia menor a 10ms. Bloqueo transaccional ACID contra doble reserva.</div>
-        <span class="flow-tag">TransactWriteItems / GSI</span>
-      </div>
-
-      <div class="node-card flow-acudiente flow-profesor" style="--card-accent: var(--aws-blue);" onclick="showDetails('dynamo-streams')">
-        <div class="card-top">
-          <div class="service-icon icon-dynamo">⚡</div>
-          <div>
-            <div class="node-title">DynamoDB Streams</div>
-            <div class="node-service">Event-Driven Stream</div>
-          </div>
+        <div class="node-desc">Persistencia directa con latencia &lt;10ms. Cifrado nativo KMS en reposo y transacciones ACID sin Streams.</div>
+        <div class="tag-container">
+          <span class="kms-tag">KMS Reposo (CMK)</span>
+          <span class="enc-tag">HTTPS TLS 1.3 SDK</span>
         </div>
-        <div class="node-desc">Captura cambios de estado (cita solicitada, cancelada) para disparar notificaciones en tiempo real.</div>
-        <span class="flow-tag">Streams → Notificaciones</span>
       </div>
     </div>
 
   </main>
 
   <!-- BANNER DE SEGURIDAD AWS IAM -->
-  <section class="iam-banner" onclick="showDetails('iam')" style="cursor: pointer;">
-    <div class="iam-info">
-      <div class="service-icon icon-iam">🔐</div>
-      <div>
-        <h3 style="font-size: 15px; color: #fde047;">Seguridad Transversal con AWS IAM</h3>
-        <p style="font-size: 13px; color: #cbd5e1;">
-          Principio de menor privilegio: Roles de ejecución dedicados por función Lambda. Acceso a DynamoDB restringido por clave y políticas OAC estrictas para S3.
+  <section class="security-ribbon" style="border-color: rgba(202, 138, 4, 0.4); background: linear-gradient(90deg, rgba(202, 138, 4, 0.1), rgba(30, 41, 59, 0.8)); cursor: pointer;" onclick="showDetails('iam')">
+    <div class="security-box">
+      <div class="sec-icon" style="background: rgba(202, 138, 4, 0.2); color: #facc15;">🔐</div>
+      <div class="sec-content">
+        <h3 style="color: #fde047;">Seguridad Transversal con AWS IAM & Mínimo Privilegio</h3>
+        <p>
+          Cada Lambda cuenta con un Execution Role aislado: únicamente permisos de escritura transaccional sobre <code>CitasAcudientesTable</code> y uso de la clave <code>kms:Decrypt / kms:GenerateDataKey</code>. S3 bloquea acceso público mediante política OAC.
         </p>
       </div>
     </div>
-    <div class="badge" style="background: rgba(253, 224, 71, 0.15); color: #fde047; border-color: rgba(253, 224, 71, 0.4);">
-      Click para ver Políticas IAM
+    <div style="display: flex; align-items: center; justify-content: flex-end;">
+      <div class="badge" style="background: rgba(253, 224, 71, 0.15); color: #fde047; border-color: rgba(253, 224, 71, 0.4);">
+        Click para ver Políticas IAM y KMS
+      </div>
     </div>
   </section>
 
@@ -527,11 +793,11 @@
 
     <div class="details-grid">
       <div class="details-box">
-        <h4 id="box1Title">Especificación Técnica</h4>
+        <h4 id="box1Title">Especificación Técnica & Flujo</h4>
         <div id="box1Content"></div>
       </div>
       <div class="details-box">
-        <h4 id="box2Title">Configuración / Política IAM</h4>
+        <h4 id="box2Title">Cifrado (Tránsito / Reposo) & IAM</h4>
         <div id="box2Content"></div>
       </div>
     </div>
@@ -540,250 +806,214 @@
   <script>
     const dataStore = {
       'acudiente': {
-        title: "Celular Acudiente (Móvil Web / PWA)",
-        desc: "Aplicación web progresiva optimizada para teléfonos inteligentes Android y iOS.",
-        box1Title: "Capacidades del Acudiente",
+        title: "Celular Acudiente (PWA Mobile Web)",
+        desc: "Punto de interacción del padre de familia o acudiente desde su teléfono inteligente.",
+        box1Title: "Flujo de Entrada del Acudiente",
         box1Content: `
-          <ul style="font-size: 12px; line-height: 1.6; color: #cbd5e1; padding-left: 18px;">
-            <li>Filtrar docentes por grado, grupo o asignatura del estudiante.</li>
-            <li>Consultar calendario con cupos libres en tiempo real.</li>
-            <li>Solicitar cita especificando el motivo pedagógico o conductual.</li>
-            <li>Recibir confirmación instantánea o cancelación con motivo.</li>
-          </ul>
+          <ol style="font-size: 12px; line-height: 1.6; color: #cbd5e1; padding-left: 18px;">
+            <li>Ingresa a la URL desde Chrome/Safari móvil.</li>
+            <li>La PWA se descarga desde CloudFront + S3 en caché del teléfono.</li>
+            <li>Filtra profesores por grado y visualiza fechas libres.</li>
+            <li>Envía solicitud de cita mediante <code>POST /citas</code> con token JWT.</li>
+          </ol>
         `,
-        box2Title: "Experiencia de Usuario Móvil",
+        box2Title: "Cifrado en Tránsito",
         box2Content: `
-          <pre>Tecnología: React / Vue / HTML5 Responsive PWA
-Almacenamiento local: Token JWT en LocalStorage / IndexedDB
-Comunicaciones: HTTPS REST API mediante Fetch/Axios</pre>
+          <pre>Protocolo: HTTPS / TLS 1.3
+Certificado: AWS Certificate Manager (RSA 2048 / ECDSA)
+Payload: Cifrado en la capa de transporte TCP</pre>
         `
       },
       'profesor': {
-        title: "Celular Docente (Móvil Web / PWA)",
-        desc: "Panel docente adaptado a pantallas táctiles para gestionar la atención a padres de familia.",
-        box1Title: "Capacidades del Docente",
+        title: "Celular Docente (PWA Mobile Web)",
+        desc: "Panel de control táctil para que los profesores organicen sus horas de atención.",
+        box1Title: "Operaciones del Docente",
         box1Content: `
-          <ul style="font-size: 12px; line-height: 1.6; color: #cbd5e1; padding-left: 18px;">
-            <li>Publicar horarios libres de atención semanal (ej. Martes 2:00 PM - 4:00 PM).</li>
-            <li>Aceptar, reprogramar o rechazar solicitudes de cita con justificación.</li>
-            <li>Visualizar historial de citas previas con el acudiente y el estudiante.</li>
-            <li>Registrar compromisos y observaciones al finalizar la reunión.</li>
-          </ul>
+          <ol style="font-size: 12px; line-height: 1.6; color: #cbd5e1; padding-left: 18px;">
+            <li>Configura horarios disponibles de atención (<code>POST /disponibilidad</code>).</li>
+            <li>Visualiza solicitudes pendientes de acudientes.</li>
+            <li>Confirma cita y asigna aula física o enlace virtual.</li>
+            <li>Al finalizar la reunión, redacta compromisos en el acta digital.</li>
+          </ol>
         `,
-        box2Title: "Flujo de Trabajo",
+        box2Title: "Seguridad y Cifrado",
         box2Content: `
-          <pre>Estado Cita: SOLICITADA → CONFIRMADA → ATENDIDA
-Registro de acta: Texto de acuerdos guardado en DynamoDB</pre>
+          <pre>Canal: HTTPS TLS 1.3
+Autenticación: JWT con firma criptográfica
+Cifrado en sesión: Tokens cifrados en reposo local</pre>
         `
       },
       'cloudfront': {
-        title: "Amazon CloudFront (CDN y Distribución Segura)",
-        desc: "Punto de presencia perimetral para acelerar la entrega de la aplicación móvil en cualquier operador celular.",
-        box1Title: "Beneficios de Rendimiento",
+        title: "Amazon CloudFront (CDN Perimetral)",
+        desc: "Distribuye la aplicación web a nivel global y perimetral con aceleración de red y terminación SSL.",
+        box1Title: "Flujo de Distribución",
         box1Content: `
           <ul style="font-size: 12px; line-height: 1.6; color: #cbd5e1; padding-left: 18px;">
-            <li>Caché perimetral de archivos estáticos (JS, CSS, imágenes).</li>
-            <li>Certificado SSL/TLS gestionado con AWS Certificate Manager (HTTPS).</li>
-            <li>Compresión Brotli/Gzip para carga ultra-rápida en redes móviles 3G/4G/5G.</li>
-            <li>Protección contra ataques volumétricos con AWS Shield Standard.</li>
+            <li>Redirige automáticamente todo tráfico HTTP a HTTPS (Puerto 443).</li>
+            <li>Sirve los archivos estáticos desde el PoP más cercano al usuario.</li>
+            <li>Se comunica con el bucket S3 mediante Origin Access Control (OAC).</li>
           </ul>
         `,
-        box2Title: "Configuración de Origen (OAC)",
+        box2Title: "Cifrado en Tránsito y Reposo",
         box2Content: `
-          <pre>Origin: S3-citasacudientes-bucket
-Origin Access Control (OAC): Activado
-Viewer Protocol Policy: Redirect HTTP to HTTPS
-Allowed HTTP Methods: GET, HEAD, OPTIONS</pre>
+          <pre>Protocolo cliente: TLSv1.3 obligatorio
+Certificado SSL: Gestionado por AWS ACM
+Cifrado hacia S3: HTTPS autenticado con firma SigV4</pre>
         `
       },
       's3': {
         title: "Amazon S3 (Bucket de Almacenamiento Estático)",
-        desc: "Repositorio privado de alta durabilidad (99.999999999%) para los archivos compilados del frontend.",
-        box1Title: "Seguridad y Acceso",
+        desc: "Contenedor privado de alta durabilidad para el código compilado de la aplicación frontend.",
+        box1Title: "Seguridad Perimetral",
         box1Content: `
           <ul style="font-size: 12px; line-height: 1.6; color: #cbd5e1; padding-left: 18px;">
             <li>Bloqueo total de acceso público (Block Public Access: ON).</li>
-            <li>Acceso restringido única y exclusivamente a CloudFront mediante OAC.</li>
-            <li>Versionado habilitado para despliegues continuos y rollback instantáneo.</li>
+            <li>Ningún usuario puede acceder directamente a la URL del bucket S3.</li>
+            <li>Solo acepta peticiones firmadas por el ARN de la distribución CloudFront.</li>
           </ul>
         `,
-        box2Title: "S3 Bucket Policy (OAC)",
+        box2Title: "Cifrado en Reposo (SSE-KMS)",
         box2Content: `
-          <pre>{
-  "Version": "2012-10-17",
-  "Statement": [{
-    "Effect": "Allow",
-    "Principal": {"Service": "cloudfront.amazonaws.com"},
-    "Action": "s3:GetObject",
-    "Resource": "arn:aws:s3:::citasacudientes-frontend/*",
-    "Condition": {
-      "StringEquals": {"AWS:SourceArn": "arn:aws:cloudfront::123:distribution/E123"}
-    }
-  }]
-}</pre>
+          <pre>Cifrado en reposo: AWS KMS (SSE-KMS)
+Key Management: Clave administrada por el cliente (CMK)
+Rotación de clave: Anual automática
+Bucket Policy: Exige condición aws:SecureTransport: true</pre>
         `
       },
       'apigw': {
-        title: "Amazon API Gateway (Enrutamiento y Control de API)",
-        desc: "Servicio administrado que expone las rutas REST protegidas hacia las funciones Lambda.",
-        box1Title: "Rutas y Recursos Expuestos",
+        title: "Amazon API Gateway (REST API)",
+        desc: "Puerta de enlace segura y administrada que orquesta las peticiones móviles hacia las funciones Lambda.",
+        box1Title: "Flujo de Enrutamiento y Validación",
         box1Content: `
-          <table class="endpoints-table">
-            <tr><th>Método</th><th>Ruta</th><th>Acción</th></tr>
-            <tr><td><span class="method method-get">GET</span></td><td>/disponibilidad</td><td>Lista cupos de profesores</td></tr>
-            <tr><td><span class="method method-post">POST</span></td><td>/disponibilidad</td><td>Docente publica horarios</td></tr>
-            <tr><td><span class="method method-post">POST</span></td><td>/citas</td><td>Acudiente reserva cupo</td></tr>
-            <tr><td><span class="method method-get">GET</span></td><td>/citas</td><td>Lista citas del usuario</td></tr>
-            <tr><td><span class="method method-patch">PATCH</span></td><td>/citas/{id}</td><td>Actualiza estado/compromisos</td></tr>
-          </table>
+          <ul style="font-size: 12px; line-height: 1.6; color: #cbd5e1; padding-left: 18px;">
+            <li>Recibe <code>POST /citas</code> desde el celular del acudiente.</li>
+            <li>Valida esquema JSON del payload antes de invocar cómputo (ahorra costos).</li>
+            <li>Aplica Throttling para prevenir ataques de denegación de servicio.</li>
+            <li>Invoca síncronamente la función Lambda a través de la red privada de AWS.</li>
+          </ul>
         `,
-        box2Title: "Funcionalidades Clave",
+        box2Title: "Cifrado y Seguridad de Red",
         box2Content: `
-          <pre>Autenticación: JWT Authorizer / Cognito
-Validación: Modelos Request Validation JSON Schema
-Throttling: 100 req/sec por cliente
-CORS: Habilitado para dominio CloudFront</pre>
+          <pre>Cifrado en tránsito: TLS 1.2 y 1.3
+Integración backend: AWS Lambda Proxy Integration
+Políticas CORS: Restringidas al dominio de CloudFront</pre>
         `
       },
       'lambda-booking': {
-        title: "AWS Lambda: Agendar Cita (Transaccional)",
-        desc: "Ejecuta la validación de cupo y la reserva en DynamoDB mediante transacciones atómicas.",
-        box1Title: "Lógica Transaccional Anti-Doble Reserva",
+        title: "AWS Lambda: Agendar Cita (Sin Streams)",
+        desc: "Microservicio serverless que ejecuta la lógica de reserva y persistencia directa en DynamoDB.",
+        box1Title: "Lógica Transaccional Directa",
         box1Content: `
           <p style="font-size: 12px; color: #cbd5e1; line-height: 1.5;">
-            Si dos acudientes pulsan reservar al mismo milisegundo por el mismo horario de un profesor, 
-            DynamoDB <code>TransactWriteItems</code> garantiza que solo uno tenga éxito con 
-            <code>attribute_not_exists</code>, rechazando el segundo de manera consistente.
+            Lambda valida el cupo y escribe directamente en DynamoDB mediante 
+            <code>TransactWriteItems</code> en una sola operación atómica. 
+            <b>No se usan DynamoDB Streams</b>; la respuesta de éxito o rechazo se entrega 
+            síncronamente al celular en menos de 200 milisegundos.
           </p>
         `,
-        box2Title: "Operación DynamoDB",
+        box2Title: "Cifrado y Permisos IAM",
         box2Content: `
-          <pre>await dynamo.transactWrite({
-  TransactItems: [
-    {
-      Put: {
-        TableName: "CitasTable",
-        Item: citaPayload,
-        ConditionExpression: "attribute_not_exists(PK)"
-      }
-    },
-    {
-      Update: {
-        TableName: "CitasTable",
-        Key: { PK: "PROF#10", SK: "SLOT#2026-11-20T14:00" },
-        UpdateExpression: "SET estado = :ocupado",
-        ConditionExpression: "estado = :libre"
-      }
-    }
-  ]
-});</pre>
+          <pre>Cifrado en reposo: Código y variables con AWS KMS
+Cifrado en tránsito: SDK AWS con TLS 1.3
+IAM: dynamodb:TransactWriteItems y kms:GenerateDataKey</pre>
         `
       },
       'lambda-disp': {
         title: "AWS Lambda: Disponibilidad Docente",
-        desc: "Permite al profesor definir su horario de atención y a los acudientes consultarlo.",
-        box1Title: "Operaciones",
+        desc: "Servicio para que los docentes publiquen sus horarios y los acudientes los consulten.",
+        box1Title: "Acceso a Datos",
         box1Content: `
           <ul style="font-size: 12px; line-height: 1.6; color: #cbd5e1; padding-left: 18px;">
-            <li>Crea franjas recurrentes o de fecha única en minutos.</li>
-            <li>Calcula disponibilidad descontando citas ya asignadas o festivos escolares.</li>
-            <li>Filtrado eficiente mediante consultas Query con Partition Key del docente.</li>
+            <li>Consulta franjas libres mediante <code>Query</code> eficiente sobre la clave del docente.</li>
+            <li>Filtra citas canceladas o finalizadas.</li>
           </ul>
         `,
-        box2Title: "Parámetros de Ejecución",
+        box2Title: "Cifrado",
         box2Content: `
-          <pre>Runtime: Node.js 20.x o Python 3.12
-Memoria: 256 MB (Optimizado para latencia fría < 200ms)
-Timeout: 5 segundos</pre>
+          <pre>Tránsito: Conexión cifrada a DynamoDB
+Reposo: Variables de entorno cifradas con KMS</pre>
         `
       },
       'lambda-citas': {
-        title: "AWS Lambda: Gestión y Seguimiento de Citas",
-        desc: "Controla los cambios de estado de cada cita, cancelaciones y actas de compromisos.",
-        box1Title: "Ciclo de Vida de la Cita",
+        title: "AWS Lambda: Gestión de Citas y Actas",
+        desc: "Control del ciclo de vida de la cita y registro de acuerdos pedagógicos.",
+        box1Title: "Operaciones",
         box1Content: `
           <ul style="font-size: 12px; line-height: 1.6; color: #cbd5e1; padding-left: 18px;">
-            <li><b>PENDIENTE:</b> Solicitada por el acudiente.</li>
-            <li><b>CONFIRMADA:</b> Aprobada por el profesor.</li>
-            <li><b>CANCELADA:</b> Con justificación (libera el cupo en DynamoDB).</li>
-            <li><b>FINALIZADA:</b> Con registro de compromisos académicos.</li>
+            <li>Actualización de estado: <code>SOLICITADA → CONFIRMADA → ATENDIDA</code>.</li>
+            <li>Almacenamiento de compromisos académicos de la reunión en DynamoDB.</li>
           </ul>
         `,
-        box2Title: "Seguimiento Institucional",
+        box2Title: "Políticas",
         box2Content: `
-          <pre>Auditoría: Registro de fecha, usuario y cambio de estado.
-Exportación: Generación de actas firmadas digitalmente.</pre>
+          <pre>IAM: dynamodb:UpdateItem, dynamodb:GetItem
+Tránsito: HTTPS TLS 1.3</pre>
         `
       },
       'dynamodb': {
-        title: "Amazon DynamoDB (Single-Table Design)",
-        desc: "Base de datos NoSQL totalmente administrada con capacidad bajo demanda (On-Demand Capacity).",
-        box1Title: "Diseño de Entidades y Claves",
+        title: "Amazon DynamoDB (Cifrado con AWS KMS)",
+        desc: "Base de datos NoSQL Single-Table de latencia de un solo dígito sin DynamoDB Streams.",
+        box1Title: "Persistencia Transaccional ACID",
         box1Content: `
-          <table class="endpoints-table">
-            <tr><th>Entidad</th><th>Partition Key (PK)</th><th>Sort Key (SK)</th></tr>
-            <tr><td>Docente</td><td>PROFESOR#{id}</td><td>METADATA</td></tr>
-            <tr><td>Disponibilidad</td><td>PROFESOR#{id}</td><td>HORARIO#{fecha}#{hora}</td></tr>
-            <tr><td>Cita</td><td>CITA#{id}</td><td>METADATA</td></tr>
-            <tr><td>Acudiente</td><td>ACUDIENTE#{id}</td><td>METADATA</td></tr>
-          </table>
+          <p style="font-size: 12px; color: #cbd5e1; line-height: 1.5;">
+            Garantiza que una franja de un profesor solo pueda ser tomada por un acudiente. 
+            Si ocurren dos peticiones concurrentes, la condición de estado <code>estado = :libre</code> 
+            falla atómicamente para una de ellas, previniendo sobrecupos.
+          </p>
         `,
-        box2Title: "Índices Secundarios Globales (GSI)",
+        box2Title: "Cifrado en Reposo y en Tránsito",
         box2Content: `
-          <pre>GSI1_PK: ACUDIENTE#{id} | GSI1_SK: FECHA#{timestamp}
--> Permite al acudiente ver todas sus citas ordenadas cronológicamente.
-
-GSI2_PK: ESTADO#{estado} | GSI2_SK: FECHA#{timestamp}
--> Permite a la coordinación monitorear citas pendientes.</pre>
-        `
-      },
-      'dynamo-streams': {
-        title: "DynamoDB Streams (Arquitectura Orientada a Eventos)",
-        desc: "Canaliza eventos de inserción y modificación de citas para ejecutar procesos secundarios asíncronos.",
-        box1Title: "Eventos Automatizados",
-        box1Content: `
-          <ul style="font-size: 12px; line-height: 1.6; color: #cbd5e1; padding-left: 18px;">
-            <li>Nueva cita creada → Dispara notificación por correo/SMS al profesor.</li>
-            <li>Cita confirmada → Dispara recordatorio al celular del acudiente con fecha y aula.</li>
-            <li>Cita cancelada → Dispara alerta a ambas partes y rehabilita el horario.</li>
-          </ul>
-        `,
-        box2Title: "Integración Serverless",
-        box2Content: `
-          <pre>DynamoDB Stream (NEW_AND_OLD_IMAGES)
-   ↓
-Lambda NotificacionesTrigger
-   ↓
-Amazon SNS / Amazon SES (Email y SMS al celular)</pre>
+          <pre>Cifrado en Reposo: AWS KMS (Customer Managed Key)
+Algoritmo: AES-256 (Cifra datos, índices GSI y backups)
+Cifrado en Tránsito: Endpoints HTTPS con TLS 1.3
+Sin Streams: Cero procesamiento asíncrono intermedio</pre>
         `
       },
       'iam': {
-        title: "Seguridad y Roles AWS IAM",
-        desc: "Políticas de seguridad basadas en el principio de menor privilegio (Least Privilege Access).",
-        box1Title: "Roles de Ejecución Implementados",
+        title: "Políticas de Seguridad AWS IAM & KMS",
+        desc: "Modelo de mínimo privilegio para aislar permisos entre componentes.",
+        box1Title: "Política IAM para Lambda Agendar Cita",
         box1Content: `
-          <ul style="font-size: 12px; line-height: 1.6; color: #cbd5e1; padding-left: 18px;">
-            <li><b>LambdaBookingRole:</b> Únicamente permisos <code>dynamodb:TransactWriteItems</code> y <code>dynamodb:PutItem</code> sobre la tabla CitasTable.</li>
-            <li><b>LambdaReadRole:</b> Únicamente <code>dynamodb:GetItem</code> y <code>dynamodb:Query</code>.</li>
-            <li><b>CloudWatchLogsRole:</b> Creación de logs para monitoreo y depuración.</li>
-          </ul>
+          <pre>{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DynamoDBTransactionalAccess",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:TransactWriteItems",
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:GetItem"
+      ],
+      "Resource": "arn:aws:dynamodb:*:*:table/CitasAcudientesTable"
+    },
+    {
+      "Sid": "KMSAccess",
+      "Effect": "Allow",
+      "Action": [
+        "kms:Decrypt",
+        "kms:GenerateDataKey"
+      ],
+      "Resource": "arn:aws:kms:*:*:key/citas-kms-key-id"
+    }
+  ]
+}</pre>
         `,
-        box2Title: "Ejemplo de Política IAM para Lambda Agendar",
+        box2Title: "Política de Bucket S3 (Restricción TLS)",
         box2Content: `
           <pre>{
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Effect": "Allow",
-      "Action": [
-        "dynamodb:PutItem",
-        "dynamodb:UpdateItem",
-        "dynamodb:GetItem"
-      ],
-      "Resource": [
-        "arn:aws:dynamodb:*:*:table/CitasAcudientesTable",
-        "arn:aws:dynamodb:*:*:table/CitasAcudientesTable/index/*"
-      ]
+      "Sid": "DenyNonHTTPS",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": "s3:*",
+      "Resource": "arn:aws:s3:::citasacudientes-bucket/*",
+      "Condition": {
+        "Bool": { "aws:SecureTransport": "false" }
+      }
     }
   ]
 }</pre>
@@ -791,12 +1021,33 @@ Amazon SNS / Amazon SES (Email y SMS al celular)</pre>
       }
     };
 
+    function highlightStep(stepNum, nodeIds) {
+      document.querySelectorAll('.step-item').forEach(s => s.classList.remove('active'));
+      const activeStep = document.getElementById('step' + stepNum);
+      if (activeStep) activeStep.classList.add('active');
+
+      document.querySelectorAll('.node-card').forEach(n => {
+        n.classList.remove('highlight');
+        n.classList.add('dimmed');
+      });
+
+      nodeIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.classList.remove('dimmed');
+          el.classList.add('highlight');
+        }
+      });
+    }
+
     function showDetails(key) {
       const item = dataStore[key];
       if (!item) return;
 
       document.querySelectorAll('.node-card').forEach(c => c.classList.remove('selected'));
-      event.currentTarget.classList.add('selected');
+      if (event && event.currentTarget) {
+        event.currentTarget.classList.add('selected');
+      }
 
       document.getElementById('detailsTitle').innerText = item.title;
       document.getElementById('detailsDesc').innerText = item.desc;
@@ -815,12 +1066,15 @@ Amazon SNS / Amazon SES (Email y SMS al celular)</pre>
       document.querySelectorAll('.node-card').forEach(c => c.classList.remove('selected'));
     }
 
-    function setFlow(flow) {
+    function setFlow(flow, btn) {
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      event.target.classList.add('active');
+      btn.classList.add('active');
+
+      document.querySelectorAll('.step-item').forEach(s => s.classList.remove('active'));
 
       const cards = document.querySelectorAll('.node-card');
       cards.forEach(card => {
+        card.classList.remove('highlight');
         if (flow === 'all') {
           card.classList.remove('dimmed');
         } else if (flow === 'acudiente') {

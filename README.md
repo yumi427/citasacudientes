@@ -33,15 +33,17 @@ citasacudientes/
 
 ---
 
-## ☁️ Arquitectura AWS (100% Serverless)
+## ☁️ Arquitectura AWS (100% Serverless con Cifrado E2E)
 
-La solución utiliza una arquitectura totalmente Serverless con costo cero en reposo y escalabilidad automática:
+La solución utiliza una arquitectura totalmente Serverless, directa y síncrona (**sin DynamoDB Streams**), con protección de datos de grado bancario:
 
-- **Frontend Móvil (PWA):** Alojado en **Amazon S3** y distribuido de forma segura y ultra-rápida vía **Amazon CloudFront** con SSL.
-- **API & Enrutamiento:** **Amazon API Gateway** para endpoints REST protegidos con validación JSON y control de tasa.
-- **Lógica de Negocio:** Funciones **AWS Lambda** especializadas (Disponibilidad, Agendamiento Transaccional, Gestión y Seguimiento).
-- **Base de Datos:** **Amazon DynamoDB** (Single-Table Design con transacciones ACID para evitar reservas simultáneas o sobrecupos).
-- **Seguridad:** **AWS IAM** con roles de ejecución dedicados y principio de menor privilegio.
+- **Cifrado en Tránsito:** Canales **TLS 1.3** forzados en todos los saltos (Móvil ↔ CloudFront, CloudFront ↔ S3, Móvil ↔ API Gateway, Lambda ↔ DynamoDB).
+- **Cifrado en Reposo:** **AWS KMS** (Customer Managed Key) habilitado en el bucket S3 (SSE-KMS), tablas e índices de DynamoDB y variables de entorno de Lambda.
+- **Frontend Móvil (PWA):** Alojado en **Amazon S3** (privado con OAC) y distribuido de forma ultra-rápida vía **Amazon CloudFront** con SSL.
+- **API & Enrutamiento:** **Amazon API Gateway** para endpoints REST con validación JSON y control de tasa.
+- **Lógica de Negocio:** Funciones **AWS Lambda** (Disponibilidad, Agendamiento Transaccional y Gestión de Citas).
+- **Base de Datos:** **Amazon DynamoDB** (Single-Table Design con transacciones ACID directas `TransactWriteItems`).
+- **Seguridad:** **AWS IAM** con principio de menor privilegio por función Lambda.
 
 👉 **Explora el [Diagrama Interactivo de Arquitectura (HTML)](file:///C:/Users/Yoimer%20Barrera/ACME/citasacudientes/docs/arquitectura.html)** y la **[Especificación Técnica Completa](file:///C:/Users/Yoimer%20Barrera/ACME/citasacudientes/docs/ARQUITECTURA.md)**.
 
