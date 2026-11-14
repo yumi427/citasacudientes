@@ -22,14 +22,44 @@ Sistema de gestión y asignación de citas para acudientes e instituciones educa
 
 ```text
 citasacudientes/
-├── src/               # Código fuente de la aplicación (Lambdas y Frontend)
+├── src/               # Código fuente de las funciones Lambda (Python 3.12)
+│   └── lambdas/
+│       ├── agendar_cita/     # Agendamiento transaccional anti-overbooking
+│       ├── disponibilidad/   # Horarios de atención de docentes
+│       └── gestion_citas/    # Consulta, cancelación y actas de compromiso
+├── terraform/         # Infraestructura como Código (IaC) en AWS
+│   ├── versions.tf           # Proveedores y versión de Terraform
+│   ├── variables.tf          # Variables parametrizables
+│   ├── kms.tf                # Clave KMS CMK para cifrado en reposo
+│   ├── s3_cloudfront.tf      # Bucket S3, CloudFront CDN y OAC
+│   ├── dynamodb.tf           # Tabla Single-Table con GSI1 y GSI2
+│   ├── iam.tf                # Roles con mínimo privilegio
+│   ├── lambda.tf             # Empaquetado y configuración de Lambdas
+│   ├── api_gateway.tf        # Rutas REST, CORS y permisos
+│   ├── outputs.tf            # URLs de CloudFront y API Gateway
+│   └── README.md             # Guía paso a paso de despliegue
 ├── docs/              # Documentación técnica y diagramas
-│   ├── arquitectura.html # Diagrama interactivo de arquitectura AWS Serverless
-│   └── ARQUITECTURA.md   # Especificación técnica detallada y modelo DynamoDB
-├── tests/             # Pruebas unitarias y de integración
-├── .gitignore         # Archivos y carpetas ignorados por git
+│   ├── arquitectura.html     # Diagrama interactivo de arquitectura AWS Serverless
+│   └── ARQUITECTURA.md       # Especificación técnica, flujos y modelo de datos
+├── .gitignore         # Archivos y carpetas ignorados por git y terraform
 └── README.md          # Documentación general del proyecto
 ```
+
+---
+
+## 🛠️ Despliegue con Terraform
+
+Toda la infraestructura en AWS está automatizada con **Terraform**:
+
+```bash
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
+terraform init
+terraform plan
+terraform apply
+```
+
+Consulta la [Guía completa de despliegue en terraform/README.md](file:///C:/Users/Yoimer%20Barrera/ACME/citasacudientes/terraform/README.md).
 
 ---
 
